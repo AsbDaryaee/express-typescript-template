@@ -4,8 +4,9 @@ import helmet from "helmet";
 import morgan from "morgan";
 import "dotenv/config";
 
-import { config } from "./config";
 import routes from "./routes";
+import { config } from "./config";
+import { connectRedis } from "./config/redis";
 
 const app = express();
 
@@ -33,7 +34,8 @@ app.use(
 
 const PORT = config.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await connectRedis();
   console.log(`Server is running on port ${PORT}`);
 });
 
