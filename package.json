@@ -1,0 +1,45 @@
+{
+  "name": "express-typescript-template",
+  "version": "1.0.0",
+  "description": "Express TypeScript template with PostgreSQL, Redis, RabbitMQ",
+  "main": "dist/app.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon --exec tsx src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "db:test": "tsx src/db/test-connection.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.8",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "pg": "^8.16.3",
+    "redis": "^5.8.0",
+    "winston": "^3.17.0",
+    "zod": "^4.0.16"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.7",
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^24.2.1",
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.4",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
