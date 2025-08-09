@@ -1,7 +1,15 @@
 import { Response, NextFunction } from "express";
-import { verifyToken, findUserById } from "../services/authService";
+
+import {
+  verifyToken,
+  findUserById,
+  isTokenBlacklisted,
+} from "../services/authService";
+
 import { AuthRequest } from "../types";
+
 import { logger } from "../utils/logger";
+import { getCache, setCache } from "../services/cacheService";
 
 export const authenticateToken = async (
   req: AuthRequest,
@@ -16,6 +24,14 @@ export const authenticateToken = async (
       res
         .status(401)
         .json({ success: false, message: "Access token required" });
+      return;
+    }
+
+    await setCache("kir", true);
+
+    if (await isTokenBlacklisted(token)) {
+      res.status(401).json({ success: false, message: "Token revoked" });
+      logger.error("Revoked token rejected");
       return;
     }
 
