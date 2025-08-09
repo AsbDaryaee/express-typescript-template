@@ -1,17 +1,13 @@
 import { Router } from "express";
+import { register, login, logout } from "../controllers/authController";
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/register", (req, res) => {
-  res.json({ message: "Register endpoint" });
-});
+router.post("/register", register);
 
-router.post("/login", (req, res) => {
-  res.json({ message: "Login endpoint" });
-});
+router.post("/login", login);
 
-router.post("/logout", (req, res) => {
-  res.json({ message: "Logout endpoint" });
-});
+router.post("/logout", authenticateToken, logout);
 
 export default router;
