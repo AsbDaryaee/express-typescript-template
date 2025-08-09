@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../config/database";
-import { users, type User } from "../db/schema";
+import { users, type User } from "../db/schema/users";
 import {
   setCache,
   getCache,

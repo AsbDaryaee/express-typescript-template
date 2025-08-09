@@ -2,9 +2,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { eq } from "drizzle-orm";
 import { db } from "../config/database";
-import { users, type User, type NewUser } from "../db/schema";
+import { users, type User, type NewUser } from "../db/schema/users";
+
 import { config } from "../config";
 import { JwtPayload } from "../types";
+import { getCache, setCache } from "./cacheService";
 
 export const hashPassword = async (password: string): Promise<string> => {
   const saltRounds = 12;
@@ -69,4 +71,16 @@ export const authenticateUser = async (
     return null;
   }
   return user;
+};
+
+export const logoutUser = async (token: string): Promise<void> => {
+  const cacheKey = `blacklist:${token}`;
+  await setCache(cacheKey, true, 3600);
+};
+
+export const isTokenBlacklisted = async (token: string): Promise<boolean> => {
+  const cacheKey = `blacklist:${token}`;
+  const blacklistToken = await getCache(cacheKey);
+
+  return Boolean(blacklistToken);
 };
