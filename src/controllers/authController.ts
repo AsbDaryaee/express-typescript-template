@@ -1,20 +1,25 @@
 import { Request, Response } from "express";
+
 import {
   createUser,
   authenticateUser,
   generateToken,
   findUserByEmail,
+  logoutUser,
 } from "../services/authService";
+
 import {
   publishUserEvent,
   publishEmailNotification,
 } from "../services/queueService";
+
 import {
   LoginRequest,
   RegisterRequest,
   ApiResponse,
   AuthRequest,
 } from "../types";
+
 import { logger } from "../utils/logger";
 
 export const register = async (
@@ -106,6 +111,24 @@ export const login = async (
       success: false,
       message: "Failed to login",
     });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No token provided" });
+    }
+    const token = authHeader.split(" ")[1];
+    await logoutUser(token);
+
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    logger.error("Logout error:", error);
+    res.status(500).json({ success: false, message: "Failed to logout" });
   }
 };
 
