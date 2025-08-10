@@ -9,6 +9,7 @@ export const config = {
   REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
   RABBITMQ_URL: process.env.RABBITMQ_URL || "amqp://localhost:5672",
   JWT_SECRET: process.env.JWT_SECRET || "fallback-secret-key",
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "3600",
+  JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
+  JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || "4h",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
 } as const;
