@@ -3,24 +3,27 @@ import { Request, Response } from "express";
 import {
   createUser,
   authenticateUser,
-  generateToken,
   findUserByEmail,
-  logoutUser,
 } from "../services/authService";
+
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  invalidateRefreshToken,
+  isRefreshTokenValid,
+  logoutUser,
+  verifyToken,
+} from "../services/tokenService";
 
 import {
   publishUserEvent,
   publishEmailNotification,
 } from "../services/queueService";
 
-import {
-  LoginRequest,
-  RegisterRequest,
-  ApiResponse,
-  AuthRequest,
-} from "../types";
+import { LoginRequest, RegisterRequest, ApiResponse } from "../types";
 
 import { logger } from "../utils/logger";
+import { User } from "../db/schema/users";
 
 export const register = async (
   req: Request<{}, ApiResponse, RegisterRequest>,
@@ -39,7 +42,8 @@ export const register = async (
     }
 
     const user = await createUser({ email, password, firstName, lastName });
-    const token = generateToken(user);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
     // Publish events
     await publishUserEvent("user.registered", user.id, { email: user.email });
@@ -59,7 +63,10 @@ export const register = async (
           firstName: user.firstName,
           lastName: user.lastName,
         },
-        token,
+        tokens: {
+          access: accessToken,
+          refresh: refreshToken,
+        },
       },
     });
   } catch (error) {
@@ -86,8 +93,8 @@ export const login = async (
       });
       return;
     }
-
-    const token = generateToken(user);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user);
 
     // Publish event
     await publishUserEvent("user.login", user.id, { timestamp: new Date() });
@@ -102,7 +109,10 @@ export const login = async (
           firstName: user.firstName,
           lastName: user.lastName,
         },
-        token,
+        tokens: {
+          access: accessToken,
+          refresh: refreshToken,
+        },
       },
     });
   } catch (error) {
@@ -117,13 +127,18 @@ export const login = async (
 export const logout = async (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
+    const user: User = req.user;
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res
         .status(400)
         .json({ success: false, message: "No token provided" });
     }
-    const token = authHeader.split(" ")[1];
-    await logoutUser(token);
+
+    const accessToken = authHeader.split(" ")[1];
+
+    await logoutUser(accessToken);
+    await invalidateRefreshToken(user.id);
 
     res.json({ success: true, message: "Logged out successfully" });
   } catch (error) {
@@ -132,28 +147,49 @@ export const logout = async (req: Request, res: Response) => {
   }
 };
 
-export const getProfile = async (
-  req: AuthRequest,
-  res: Response
-): Promise<void> => {
+export const refresh = async (req: Request, res: Response) => {
   try {
-    const user = req.user!;
-    res.json({
+    const authHeader = req.headers.authorization;
+    const user: User = req.user;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No refresh token provided" });
+    }
+
+    const refreshToken = authHeader.split(" ")[1];
+
+    const isTokenValid = await isRefreshTokenValid(refreshToken);
+
+    if (!isTokenValid) {
+      return res.status(403).json({
+        success: false,
+        message: "Refresh token is invalid or expired",
+      });
+    }
+
+    if (!user) {
+      return res.status(403).json({
+        success: false,
+        message: "User does not exist.",
+      });
+    }
+
+    const newAccessToken = generateAccessToken(user);
+
+    res.status(200).json({
       success: true,
-      message: "Profile retrieved successfully",
+      message: "Tokens refreshed successfully",
       data: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        createdAt: user.createdAt,
+        accessToken: newAccessToken,
       },
     });
   } catch (error) {
-    logger.error("Get profile error:", error);
+    logger.error("Refresh token error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to get profile",
+      message: "Failed to refresh access token",
     });
   }
 };
